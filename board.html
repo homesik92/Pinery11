@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<title>Pinery 11 Board Tools</title>
+</head>
+<body>
+<div class="wrap">
+  <header class="bar">
+    <a class="brand" href="index.html">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 1 6 9h3l-4 6h4l-3 5h6v3h2v-3h6l-3-5h4l-4-6h3z"/></svg>
+      <span id="brandName">Pinery 11</span>
+    </a>
+    <nav class="nav" id="nav" aria-label="Main"></nav>
+  </header>
+
+  <main>
+    <div class="board-head">
+      <div>
+        <p class="eyebrow">Board only</p>
+        <h1 style="font-size:clamp(1.8rem,4.5vw,2.6rem);margin-top:10px">Board tools</h1>
+      </div>
+    </div>
+    <div id="gate"><p class="sub">Loading…</p></div>
+    <div id="app" hidden>
+      <div class="tabs" role="tablist" id="tabs" aria-label="Board sections" style="margin-bottom:16px">
+        <button type="button" role="tab" data-tab="ledger" aria-selected="true">Dues ledger</button>
+        <button type="button" role="tab" data-tab="requests" aria-selected="false">Sign-up requests<span class="tab-count" id="reqCount" hidden></span></button>
+        <button type="button" role="tab" data-tab="news" aria-selected="false">Announcements</button>
+        <button type="button" role="tab" data-tab="years" aria-selected="false">Dues settings</button>
+      </div>
+
+      <section id="tab-ledger">
+        <div class="board-head" style="padding-top:0">
+          <label for="year" style="min-width:140px">Dues year<select id="year"></select></label>
+        </div>
+        <section class="stats" aria-label="Summary">
+          <div class="stat"><span class="eyebrow">Billed</span><b class="num" id="sBilled"></b></div>
+          <div class="stat"><span class="eyebrow">Collected</span><b class="num" id="sPaid"></b></div>
+          <div class="stat"><span class="eyebrow">Outstanding</span><b class="num" id="sOut"></b></div>
+          <div class="stat"><span class="eyebrow">Lots paid</span><b class="num" id="sLots"></b><div class="bar-track"><div class="bar-fill" id="sBar"></div></div></div>
+        </section>
+        <div class="toolbar">
+          <label for="search">Search<input id="search" type="search" placeholder="Address or owner"></label>
+          <label for="street">Street<select id="street"><option value="">All streets</option></select></label>
+          <label for="status">Status<select id="status"><option value="">All</option><option value="unpaid">Unpaid</option><option value="partial">Partial</option><option value="paid">Paid</option><option value="overdue">Past due</option></select></label>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Address</th><th>Owner</th><th class="r">Billed</th><th class="r">Paid</th><th class="r">Balance</th><th>Status</th><th></th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table></div>
+        <div class="tools">
+          <button class="btn ghost sm" type="button" data-tool="csv">Export year as CSV</button>
+          <button class="btn ghost sm" type="button" data-tool="remind">Reminder list</button>
+        </div>
+        <section class="panel" id="outPanel" hidden>
+          <h3 id="outTitle"></h3><p class="sub" id="outHint"></p>
+          <textarea id="outText" spellcheck="false" readonly aria-label="Export text"></textarea>
+          <div class="tools" style="margin-top:0"><button class="btn sm" type="button" id="outCopy">Copy</button><button class="btn ghost sm" type="button" id="outDownload">Download file</button><button class="btn ghost sm" type="button" id="outClose">Close</button></div>
+        </section>
+      </section>
+
+      <section id="tab-requests" hidden>
+        <p class="local-note" style="margin-bottom:12px">Approve a request only if you know the person lives at that address. Approved residents can see the balance for that one address and nothing else.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Address</th><th>Email</th><th>Requested</th><th>Status</th><th></th></tr></thead>
+          <tbody id="claimRows"></tbody>
+        </table></div>
+      </section>
+
+      <section id="tab-news" hidden>
+        <form class="authcard" id="newsForm" style="max-width:640px;margin-bottom:20px">
+          <h2>Post an announcement</h2>
+          <label for="nTitle">Title<input id="nTitle" required maxlength="140"></label>
+          <label for="nBody">Message<textarea id="nBody" style="font:1rem var(--font-body);min-height:110px"></textarea></label>
+          <label for="nDate">Date<input id="nDate" type="date" required></label>
+          <button class="btn" type="submit">Post to the front page</button>
+        </form>
+        <div id="newsList" class="stack"></div>
+      </section>
+
+      <section id="tab-years" hidden>
+        <form class="authcard" id="yearForm" style="max-width:640px;margin-bottom:20px">
+          <h2>Dues for a year</h2>
+          <p class="sub">Saving a year that already exists updates it. The late fee is optional: leave it at 0 if there is none.</p>
+          <div class="form-grid">
+            <label for="yYear">Year<input id="yYear" type="number" min="2000" max="2100" required></label>
+            <label for="yAmt">Amount per home<input id="yAmt" type="number" min="0" step="0.01" required></label>
+            <label for="yDue">Due date<input id="yDue" type="date" required></label>
+            <label for="yFee">Late fee<input id="yFee" type="number" min="0" step="0.01" value="0"></label>
+            <label for="yGrace">Grace days<input id="yGrace" type="number" min="0" value="30"></label>
+          </div>
+          <button class="btn" type="submit">Save year</button>
+        </form>
+        <div class="table-wrap"><table style="min-width:0"><thead><tr><th>Year</th><th class="r">Amount</th><th>Due</th><th class="r">Late fee</th><th></th></tr></thead><tbody id="yearRows"></tbody></table></div>
+      </section>
+    </div>
+  </main>
+</div>
+<aside class="drawer" id="drawer" hidden aria-label="Lot details"></aside>
+
+<script src="assets/vendor/supabase-js-2.117.2.js"></script>
+<script src="assets/config.js"></script>
+<script src="assets/addresses.js"></script>
+<script src="assets/common.js"></script>
+<script src="assets/auth-ui.js"></script>
+<script>
+(function () {
+  const P = window.P11, { sb, esc, money, fmtDate, parseDate, isoDate, today, cents, toast, cfg, summarize, statusLabel } = P;
+  const lots = window.PINERY_LOTS;
+  const $ = (id) => document.getElementById(id);
+  P.brand(); P.renderNav("board");
+
+  const S = { years: [], payments: [], adjustments: [], claims: [], owners: {}, news: [], year: null };
+  let openId = null;
+
+  // ---- gate ----
+  async function start() {
+    const user = await P.getUser();
+    if (!user) { $("app").hidden = true; $("gate").hidden = false; P.authForm($("gate"), { mode: "signin", onSignedIn: () => { P.renderNav("board"); start(); } }); return; }
+    if (!(await P.isBoard())) {
+      $("app").hidden = true; $("gate").hidden = false;
+      $("gate").innerHTML = `<div class="authcard"><h2>Board members only</h2><p>${esc(user.email)} is not on the board list. If you should have access, ask a board member to add your email.</p><button class="btn ghost" type="button" id="gateOut">Sign out</button></div>`;
+      $("gateOut").addEventListener("click", P.signOut); return;
+    }
+    $("gate").hidden = true; $("app").hidden = false;
+    await loadAll(); render();
+  }
+  async function must(q) { const r = await q; if (r.error) throw r.error; return r.data || []; }
+  async function loadAll() {
+    try {
+      const [years, payments, adjustments, claims, owners, news] = await Promise.all([
+        must(sb.from("dues_years").select("*").order("year", { ascending: false })),
+        must(sb.from("payments").select("*").order("paid_on", { ascending: false })),
+        must(sb.from("adjustments").select("*")),
+        must(sb.from("claims").select("*").order("created_at", { ascending: false })),
+        must(sb.from("owners").select("*")),
+        must(sb.from("announcements").select("*").order("posted_on", { ascending: false }).order("created_at", { ascending: false }))
+      ]);
+      S.years = years; S.payments = payments.map((p) => ({ ...p, amount: Number(p.amount) })); S.adjustments = adjustments.map((a) => ({ ...a, amount: Number(a.amount) }));
+      S.claims = claims; S.owners = {}; owners.forEach((o) => (S.owners[o.lot_id] = o.name)); S.news = news;
+      if (!S.years.find((y) => y.year === S.year)) S.year = S.years.length ? S.years[0].year : null;
+    } catch (e) { toast(P.friendly(e)); }
+  }
+
+  // ---- tabs ----
+  $("tabs").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-tab]"); if (!b) return;
+    document.querySelectorAll("#tabs [data-tab]").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+    ["ledger", "requests", "news", "years"].forEach((t) => ($("tab-" + t).hidden = t !== b.dataset.tab));
+    closeDrawer();
+  });
+
+  // ---- model ----
+  const yearRow = () => S.years.find((y) => y.year === S.year);
+  const lotPays = (id) => S.payments.filter((p) => p.lot_id === id), lotAdjs = (id) => S.adjustments.filter((a) => a.lot_id === id);
+  const sum = (id) => { const y = yearRow(); return y ? summarize(y, lotPays(id), lotAdjs(id)) : null; };
+  const residents = (id) => S.claims.filter((c) => c.lot_id === id && c.status === "approved").map((c) => c.email).filter(Boolean);
+
+  // ---- render ----
+  function render() { renderYearSelect(); renderStats(); renderRows(); renderClaims(); renderNews(); renderYears(); }
+  function renderYearSelect() {
+    $("year").innerHTML = S.years.length ? S.years.map((y) => `<option value="${y.year}">${y.year}</option>`).join("") : '<option value="">No year set up</option>';
+    if (S.year != null) $("year").value = S.year;
+  }
+  function renderStats() {
+    const rows = lots.map((l) => sum(l.id)).filter(Boolean);
+    const billed = rows.reduce((s, r) => s + r.billed, 0), got = rows.reduce((s, r) => s + r.paid, 0), out = rows.reduce((s, r) => s + Math.max(0, r.balance), 0);
+    const n = rows.filter((r) => r.balance <= 0).length;
+    $("sBilled").textContent = money(billed); $("sPaid").textContent = money(got); $("sOut").textContent = money(out);
+    $("sLots").textContent = n + " of " + lots.length; $("sBar").style.width = (lots.length ? (n / lots.length) * 100 : 0) + "%";
+  }
+  function renderRows() {
+    if (!yearRow()) { $("rows").innerHTML = '<tr><td colspan="7" class="sub" style="padding:20px">Set up a dues year under Dues settings first.</td></tr>'; return; }
+    const t = $("search").value.trim().toLowerCase(), st = $("street").value, ss = $("status").value;
+    const list = lots.filter((l) => {
+      const who = (S.owners[l.id] || "") + " " + residents(l.id).join(" ");
+      return (!t || l.address.toLowerCase().includes(t) || who.toLowerCase().includes(t)) && (!st || l.street === st) && (!ss || sum(l.id).status === ss);
+    });
+    $("rows").innerHTML = list.length ? list.map((l) => {
+      const r = sum(l.id), owner = S.owners[l.id], res = residents(l.id);
+      return `<tr><td><b>${esc(l.address)}</b></td><td>${owner ? esc(owner) : '<span class="sub">Not entered</span>'}${res.length ? `<br><span class="sub">${res.map(esc).join(", ")}</span>` : ""}</td>
+        <td class="r num">${money(r.billed)}</td><td class="r num">${money(r.paid)}</td><td class="r num">${money(r.balance)}</td>
+        <td><span class="pill ${r.status}">${statusLabel[r.status]}</span></td>
+        <td class="r"><button class="btn sm ${r.status === "paid" ? "ghost" : ""}" type="button" data-open="${l.id}">${r.status === "paid" ? "Details" : "Record payment"}</button></td></tr>`;
+    }).join("") : '<tr><td colspan="7" class="sub" style="padding:20px">No lots match these filters.</td></tr>';
+  }
+  [...new Set(lots.map((l) => l.street))].forEach((s) => $("street").insertAdjacentHTML("beforeend", `<option>${esc(s)}</option>`));
+  ["search", "street", "status"].forEach((id) => $(id).addEventListener("input", renderRows));
+  $("year").addEventListener("change", () => { S.year = +$("year").value; closeDrawer(); renderStats(); renderRows(); });
+
+  // ---- drawer ----
+  const drawer = $("drawer");
+  const closeDrawer = () => { drawer.hidden = true; openId = null; };
+  function openLot(id) {
+    openId = id;
+    const lot = lots.find((l) => l.id === id), r = sum(id);
+    const pays = lotPays(id).filter((p) => p.year === S.year), adjs = lotAdjs(id).filter((a) => a.year === S.year);
+    drawer.hidden = false;
+    drawer.innerHTML = `
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:start">
+        <div><p class="eyebrow">${S.year} dues</p><h2 style="margin-top:6px">${esc(lot.address)}</h2></div>
+        <button class="btn ghost sm" type="button" id="dClose">Close</button>
+      </div>
+      <div class="form-grid num"><div class="stat"><span class="eyebrow">Billed</span><b>${money(r.billed)}</b></div><div class="stat"><span class="eyebrow">Balance</span><b>${money(r.balance)}</b></div></div>
+      ${residents(id).length ? `<p class="sub">Signed-up residents: ${residents(id).map(esc).join(", ")}</p>` : ""}
+      <form id="ownerForm" class="form-grid"><label class="full" for="owner">Owner name (board notes)<input id="owner" value="${esc(S.owners[id] || "")}" placeholder="Owner or household"></label><div class="full"><button class="btn ghost" type="submit" style="width:100%">Save name</button></div></form>
+      <h3>Record a payment</h3>
+      <form id="payForm" class="form-grid">
+        <label for="pDate">Date received<input id="pDate" type="date" required value="${isoDate(today())}"></label>
+        <label for="pAmt">Amount<input id="pAmt" type="number" min="0.01" step="0.01" required value="${r.balance > 0 ? r.balance.toFixed(2) : ""}"></label>
+        <label for="pMethod">Method<select id="pMethod"><option>Check</option><option>Cash</option><option>Online</option><option>Other</option></select></label>
+        <label for="pRef">Check or reference no.<input id="pRef"></label>
+        <div class="full"><button class="btn" type="submit" style="width:100%">Save payment</button></div>
+      </form>
+      <h3>Payments on file</h3>
+      <div class="pay-list" id="payList">${pays.length ? pays.map((p) => `<div class="pay-row"><span class="num">${esc(fmtDate(p.paid_on))}<br><span class="sub">${esc(p.method)}${p.reference ? " · " + esc(p.reference) : ""}</span></span><span class="num"><b>${money(p.amount)}</b></span><button class="btn danger sm" type="button" data-del="${p.id}">Remove</button></div>`).join("") : '<p class="sub">No payments recorded for this year.</p>'}</div>
+      <h3>Adjustments</h3>
+      <p class="sub">Use for a late fee, a credit, or a one-time charge. Positive adds to what is owed, negative reduces it.</p>
+      <form id="adjForm" class="form-grid"><label for="aAmt">Amount<input id="aAmt" type="number" step="0.01" required></label><label for="aNote">Reason<input id="aNote" required></label><div class="full"><button class="btn ghost" type="submit" style="width:100%">Add adjustment</button></div></form>
+      <div class="pay-list">${adjs.map((a) => `<div class="pay-row"><span>${esc(a.note || "")}</span><span class="num"><b>${money(a.amount)}</b></span><button class="btn danger sm" type="button" data-deladj="${a.id}">Remove</button></div>`).join("")}</div>`;
+    $("dClose").addEventListener("click", closeDrawer);
+    $("ownerForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = $("owner").value.trim();
+      const q = name ? sb.from("owners").upsert({ lot_id: id, name }) : sb.from("owners").delete().eq("lot_id", id);
+      await write(q, "Saved", id);
+    });
+    $("payForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const amt = cents(parseFloat($("pAmt").value)); if (!(amt > 0)) return;
+      await write(sb.from("payments").insert({ lot_id: id, year: S.year, amount: amt, paid_on: $("pDate").value, method: $("pMethod").value, reference: $("pRef").value.trim() || null }), "Payment saved", id);
+    });
+    $("adjForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const amt = cents(parseFloat($("aAmt").value)); if (!isFinite(amt) || amt === 0) return;
+      await write(sb.from("adjustments").insert({ lot_id: id, year: S.year, amount: amt, note: $("aNote").value.trim() }), "Adjustment saved", id);
+    });
+    drawer.onclick = async (e) => {
+      const d = e.target.closest("[data-del]"), da = e.target.closest("[data-deladj]");
+      if (d) await write(sb.from("payments").delete().eq("id", d.dataset.del), "Payment removed", id);
+      if (da) await write(sb.from("adjustments").delete().eq("id", da.dataset.deladj), "Adjustment removed", id);
+    };
+  }
+  async function write(q, okMsg, reopen) {
+    const { error } = await q;
+    if (error) { toast(P.friendly(error)); return false; }
+    await loadAll(); render(); if (reopen) openLot(reopen); toast(okMsg); return true;
+  }
+  $("rows").addEventListener("click", (e) => { const b = e.target.closest("[data-open]"); if (b) openLot(b.dataset.open); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !drawer.hidden) closeDrawer(); });
+
+  // ---- sign-up requests ----
+  function renderClaims() {
+    const pending = S.claims.filter((c) => c.status === "pending").length;
+    $("reqCount").hidden = !pending; $("reqCount").textContent = pending;
+    const order = { pending: 0, approved: 1, rejected: 2 };
+    const list = S.claims.slice().sort((a, b) => order[a.status] - order[b.status]);
+    $("claimRows").innerHTML = list.length ? list.map((c) => {
+      const lot = P.lotById(c.lot_id);
+      const pill = c.status === "approved" ? "paid" : c.status === "pending" ? "partial" : "overdue";
+      const lab = { approved: "Approved", pending: "Pending", rejected: "Rejected" }[c.status];
+      const acts = (c.status !== "approved" ? `<button class="btn sm" type="button" data-claim="approved" data-uid="${c.user_id}">Approve</button> ` : "") +
+        (c.status === "pending" ? `<button class="btn ghost sm" type="button" data-claim="rejected" data-uid="${c.user_id}">Reject</button> ` : "") +
+        `<button class="btn danger sm" type="button" data-claim="remove" data-uid="${c.user_id}">Remove</button>`;
+      return `<tr><td><b>${esc(lot ? lot.address : c.lot_id)}</b></td><td>${esc(c.email || "")}</td><td>${esc(fmtDate(c.created_at))}</td><td><span class="pill ${pill}">${lab}</span></td><td class="r" style="white-space:nowrap">${acts}</td></tr>`;
+    }).join("") : '<tr><td colspan="5" class="sub" style="padding:20px">No one has signed up yet.</td></tr>';
+  }
+  let armed = null;
+  $("claimRows").addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-claim]"); if (!b) return;
+    const uid = b.dataset.uid, act = b.dataset.claim;
+    if (act === "remove") {
+      if (armed !== uid) { armed = uid; b.textContent = "Tap again to remove"; setTimeout(() => { armed = null; b.textContent = "Remove"; }, 4000); return; }
+      armed = null; await write(sb.from("claims").delete().eq("user_id", uid), "Request removed");
+    } else await write(sb.from("claims").update({ status: act }).eq("user_id", uid), act === "approved" ? "Approved" : "Rejected");
+  });
+
+  // ---- announcements ----
+  $("nDate").value = isoDate(today());
+  function renderNews() {
+    $("newsList").innerHTML = S.news.length ? S.news.map((a) => `<article class="card" style="max-width:640px"><p class="eyebrow">${esc(fmtDate(a.posted_on))}</p><h3>${esc(a.title)}</h3><p style="white-space:pre-line">${esc(a.body)}</p><div><button class="btn danger sm" type="button" data-delnews="${a.id}">Delete</button></div></article>`).join("") : '<p class="empty">No announcements posted.</p>';
+  }
+  $("newsForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const ok = await write(sb.from("announcements").insert({ title: $("nTitle").value.trim(), body: $("nBody").value.trim(), posted_on: $("nDate").value }), "Posted");
+    if (ok) { $("nTitle").value = ""; $("nBody").value = ""; }
+  });
+  let armedNews = null;
+  $("newsList").addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-delnews]"); if (!b) return;
+    const id = b.dataset.delnews;
+    if (armedNews !== id) { armedNews = id; b.textContent = "Tap again to delete"; setTimeout(() => { armedNews = null; b.textContent = "Delete"; }, 4000); return; }
+    armedNews = null; await write(sb.from("announcements").delete().eq("id", id), "Deleted");
+  });
+
+  // ---- dues settings ----
+  function renderYears() {
+    $("yearRows").innerHTML = S.years.length ? S.years.map((y) => `<tr><td><b>${y.year}</b></td><td class="r num">${money(y.amount)}</td><td>${esc(fmtDate(y.due_date))}</td><td class="r num">${money(y.late_fee)}</td><td class="r"><button class="btn ghost sm" type="button" data-edityear="${y.year}">Edit</button></td></tr>`).join("") : '<tr><td colspan="5" class="sub" style="padding:20px">No years yet.</td></tr>';
+  }
+  $("yearRows").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-edityear]"); if (!b) return;
+    const y = S.years.find((x) => x.year === +b.dataset.edityear);
+    $("yYear").value = y.year; $("yAmt").value = y.amount; $("yDue").value = String(y.due_date).slice(0, 10); $("yFee").value = y.late_fee; $("yGrace").value = y.grace_days;
+    $("yYear").scrollIntoView({ block: "center" });
+  });
+  $("yearForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const row = { year: +$("yYear").value, amount: cents(parseFloat($("yAmt").value)), due_date: $("yDue").value, late_fee: cents(parseFloat($("yFee").value || "0")), grace_days: parseInt($("yGrace").value || "0", 10) };
+    if (await write(sb.from("dues_years").upsert(row), "Saved")) { S.year = row.year; render(); }
+  });
+
+  // ---- exports ----
+  const panel = $("outPanel"), out = $("outText");
+  let outName = "";
+  function showOut(title, hint, text, name) { panel.hidden = false; $("outTitle").textContent = title; $("outHint").textContent = hint; out.value = text; outName = name; $("outDownload").hidden = !name; panel.scrollIntoView({ block: "nearest" }); }
+  const csvCell = (v) => (/[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v));
+  const tools = {
+    csv() {
+      const lines = [["Address", "Owner", "Year", "Billed", "Paid", "Balance", "Status", "Last payment"].join(",")].concat(lots.map((l) => {
+        const r = sum(l.id), ps = lotPays(l.id).filter((p) => p.year === S.year).map((p) => String(p.paid_on).slice(0, 10)).sort();
+        return [l.address, S.owners[l.id] || "", S.year, r.billed.toFixed(2), r.paid.toFixed(2), r.balance.toFixed(2), statusLabel[r.status], ps[ps.length - 1] || ""].map(csvCell).join(",");
+      }));
+      showOut(S.year + " ledger (CSV)", "Open this in Excel or Google Sheets.", lines.join("\n"), "pinery11-dues-" + S.year + ".csv");
+    },
+    remind() {
+      const owing = lots.filter((l) => sum(l.id).balance > 0);
+      const y = yearRow();
+      showOut("Reminder list", owing.length + " home" + (owing.length === 1 ? "" : "s") + " with a balance.",
+        owing.length ? `Dues reminder list, ${S.year} (due ${fmtDate(y.due_date)})\n\n` + owing.map((l) => `${l.address}${S.owners[l.id] ? " (" + S.owners[l.id] + ")" : ""}: ${money(sum(l.id).balance)}`).join("\n") : "Every home is paid for " + S.year + ".", "");
+    }
+  };
+  document.querySelector(".tools").addEventListener("click", (e) => { const b = e.target.closest("[data-tool]"); if (b && yearRow()) tools[b.dataset.tool](); });
+  $("outCopy").addEventListener("click", () => P.copyText(out.value, out));
+  $("outClose").addEventListener("click", () => { panel.hidden = true; });
+  $("outDownload").addEventListener("click", () => {
+    try { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([out.value], { type: "text/csv" })); a.download = outName; document.body.appendChild(a); a.click(); a.remove(); } catch (e) {}
+    toast("If nothing downloaded, use Copy instead.");
+  });
+
+  sb.auth.onAuthStateChange((evt) => { if (evt === "SIGNED_OUT") start(); });
+  start();
+})();
+</script>
+
+</body>
+</html>

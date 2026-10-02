@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<title>Pinery 11 HOA</title>
+</head>
+<body>
+<div class="wrap">
+  <header class="bar">
+    <a class="brand" href="index.html">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 1 6 9h3l-4 6h4l-3 5h6v3h2v-3h6l-3-5h4l-4-6h3z"/></svg>
+      <span id="brandName">Pinery 11</span>
+    </a>
+    <nav class="nav" id="nav" aria-label="Main"></nav>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="h1">
+      <div>
+        <p class="eyebrow">Parker, Colorado 80134</p>
+        <h1 id="h1" style="margin-top:12px">Pinery Filing 11 Homeowners Association</h1>
+        <p class="lede">Announcements, your dues, and the rules for our 45 homes in one place.</p>
+      </div>
+      <div id="duesCard" class="lookup" aria-live="polite"><p class="sub">Loading your dues…</p></div>
+    </section>
+
+    <section class="section" aria-labelledby="annH" style="padding-top:8px">
+      <h2 id="annH">Announcements</h2>
+      <div id="announcements" class="grid3"></div>
+    </section>
+
+    <section class="section" aria-labelledby="payH">
+      <h2 id="payH">How to pay</h2>
+      <div class="grid3" id="payCards"></div>
+    </section>
+
+    <section class="section" aria-labelledby="docH">
+      <h2 id="docH">Governing documents</h2>
+      <div id="docs" class="grid3"></div>
+    </section>
+
+    <section class="section" aria-labelledby="faqH">
+      <h2 id="faqH">Common questions</h2>
+      <div id="faq"></div>
+    </section>
+  </main>
+
+  <footer>
+    <span id="foot"></span>
+    <span>Questions: <span id="contact"></span></span>
+  </footer>
+</div>
+
+<script src="assets/vendor/supabase-js-2.117.2.js"></script>
+<script src="assets/config.js"></script>
+<script src="assets/addresses.js"></script>
+<script src="assets/common.js"></script>
+<script src="assets/auth-ui.js"></script>
+<script>
+(async function () {
+  const P = window.P11, { cfg, sb, money, esc, fmtDate, parseDate, copyText } = P;
+  const $ = (id) => document.getElementById(id);
+  P.brand(); P.renderNav("home");
+  $("foot").textContent = cfg.name + " · " + window.PINERY_LOTS.length + " lots";
+  $("contact").textContent = cfg.contact.email;
+
+  // How to pay
+  const cards = [];
+  cards.push(`<div class="card"><h3>By check</h3><p>Make it payable to <b>${esc(cfg.pay.checkPayee)}</b> and write your street address in the memo line.</p><div class="address-block">${esc(cfg.pay.checkPayee)}<br>${cfg.pay.mailTo.map(esc).join("<br>")}</div><button class="btn ghost sm" type="button" id="copyMail">Copy mailing address</button></div>`);
+  if (cfg.pay.online && cfg.pay.online.url) cards.push(`<div class="card"><h3>Online</h3><p>${esc(cfg.pay.online.label || "Pay with a card or bank transfer.")}</p><a class="btn" href="${esc(cfg.pay.online.url)}" target="_blank" rel="noopener">Pay online</a></div>`);
+  cards.push(`<div class="card"><h3>In person</h3><p>${esc(cfg.pay.inPerson)}</p></div>`);
+  $("payCards").innerHTML = cards.join("");
+  $("copyMail").addEventListener("click", () => {
+    const ta = document.createElement("textarea"); ta.value = cfg.pay.checkPayee + "\n" + cfg.pay.mailTo.join("\n");
+    ta.style.cssText = "position:fixed;opacity:0"; document.body.appendChild(ta); copyText(ta.value, ta).finally(() => ta.remove());
+  });
+  $("docs").innerHTML = (cfg.documents || []).map((x) => `<div class="card"><h3>${esc(x.title)}</h3><p>${esc(x.note)}</p><div style="display:flex;gap:8px;flex-wrap:wrap">${x.page ? `<a class="btn" href="${esc(x.page)}">Read online and FAQ</a>` : ""}<a class="btn ${x.page ? "ghost" : ""}" href="${esc(x.file)}" target="_blank" rel="noopener">View PDF</a><a class="btn ghost" href="${esc(x.file)}" download>Download</a></div></div>`).join("");
+
+  // Dues year (from the database, with the config as a fallback)
+  let y = { year: new Date().getFullYear(), amount: cfg.dues.amount, due_date: new Date().getFullYear() + "-" + cfg.dues.dueMonthDay, late_fee: cfg.dues.lateFee, grace_days: cfg.dues.graceDays };
+  let dbOk = false;
+  try {
+    const r = await sb.from("dues_years").select("*").order("year", { ascending: false }).limit(1);
+    if (!r.error && r.data && r.data[0]) { y = r.data[0]; dbOk = true; }
+  } catch (e) {}
+
+  // Announcements
+  let anns = null;
+  try {
+    const r = await sb.from("announcements").select("*").order("posted_on", { ascending: false }).order("created_at", { ascending: false }).limit(12);
+    if (!r.error) anns = r.data.map((a) => ({ date: a.posted_on, title: a.title, body: a.body }));
+  } catch (e) {}
+  if (anns == null) anns = cfg.announcements || [];
+  $("announcements").innerHTML = anns.length ? anns.map((a) => `<article class="card"><p class="eyebrow">${esc(fmtDate(a.date))}</p><h3>${esc(a.title)}</h3><p style="white-space:pre-line">${esc(a.body)}</p></article>`).join("") : '<p class="empty">No announcements right now.</p>';
+
+  // FAQ
+  const late = Number(y.late_fee) > 0 ? ` A ${money(y.late_fee)} late fee applies after ${fmtDate(new Date(parseDate(y.due_date).getTime() + y.grace_days * 86400000))}.` : "";
+  const faq = [
+    ["What do dues pay for?", cfg.dues.covers],
+    ["When are dues due?", `Dues for ${y.year} are ${money(y.amount)} per home, due ${fmtDate(y.due_date)}.${late}`],
+    ["Who can see what I owe?", "Only you and the board. After you create an account and the board approves your address, you see the balance for that one address. Nobody else can see it."],
+    ["I bought or sold a home.", "Tell the board the closing date and the new owner's name so the records and your access move to the right person."],
+    ["Who runs this site?", "Volunteer members of the " + cfg.name + " board."]
+  ];
+  $("faq").innerHTML = faq.map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join("");
+
+  // Your dues card
+  const card = $("duesCard");
+  const general = `<p class="eyebrow">${y.year} annual dues</p><div class="amt num" style="font:700 2.4rem/1 var(--font-display)">${money(y.amount)}</div><p class="sub">Per home, due ${esc(fmtDate(y.due_date))}.</p>`;
+  const user = await P.getUser();
+  if (!user) {
+    card.innerHTML = `${general}<p>Sign in to see your own balance and payment history.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="account.html">Sign in</a><a class="btn ghost" href="account.html#create">Create account</a></div>${dbOk ? "" : '<p class="msg warn">Live balances are unavailable right now.</p>'}`;
+    return;
+  }
+  const claim = await P.myClaim(user);
+  if (!claim) { card.innerHTML = `${general}<p>You are signed in. Choose your address so the board can approve it.</p><a class="btn" href="account.html">Choose my address</a>`; return; }
+  const lot = P.lotById(claim.lot_id);
+  if (claim.status === "pending") { card.innerHTML = `${general}<p class="msg warn">Your request for ${esc(lot ? lot.address : "your address")} is waiting for board approval.</p>`; return; }
+  if (claim.status === "rejected") { card.innerHTML = `${general}<p class="msg bad">The board could not match your request to ${esc(lot ? lot.address : "that address")}. Email ${esc(cfg.contact.email)}.</p>`; return; }
+  const st = await P.loadStatements(claim.lot_id);
+  if (!st.rows.length) { card.innerHTML = `${general}<a class="btn ghost" href="account.html">View my account</a>`; return; }
+  const owing = st.rows.filter((r) => r.balance > 0);
+  const total = owing.reduce((n, r) => n + r.balance, 0);
+  const worst = owing.some((r) => r.status === "overdue") ? "overdue" : owing.length ? owing[0].status : "paid";
+  const soonest = owing.length ? owing.reduce((a, r) => (r.due < a ? r.due : a), owing[0].due) : null;
+  card.innerHTML = `<p class="eyebrow">${esc(lot ? lot.address : "Your address")}</p>
+    <div class="amt num" style="font:700 2.4rem/1 var(--font-display)">${money(total)}</div>
+    <span class="pill ${worst}" style="justify-self:start">${P.statusLabel[worst]}</span>
+    <p class="sub">${owing.length ? "Balance for " + owing.map((r) => r.year).sort().join(" and ") + ". " + (worst === "overdue" ? "Past due since " + esc(fmtDate(soonest)) + "." : "Due " + esc(fmtDate(soonest)) + ".") : "You are paid up. Thank you."}</p>
+    <a class="btn ghost" href="account.html">View statement</a>`;
+})();
+</script>
+
+</body>
+</html>

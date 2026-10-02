@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<title>Pinery 11 My Dues</title>
+</head>
+<body>
+<div class="wrap">
+  <header class="bar">
+    <a class="brand" href="index.html">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 1 6 9h3l-4 6h4l-3 5h6v3h2v-3h6l-3-5h4l-4-6h3z"/></svg>
+      <span id="brandName">Pinery 11</span>
+    </a>
+    <nav class="nav" id="nav" aria-label="Main"></nav>
+  </header>
+
+  <main class="stack" style="padding-block:12px 24px">
+    <div>
+      <p class="eyebrow">Your account</p>
+      <h1 style="font-size:clamp(1.8rem,4.5vw,2.6rem);margin-top:10px">My dues</h1>
+    </div>
+    <div id="view" aria-live="polite"><p class="sub">Loading…</p></div>
+  </main>
+</div>
+
+<script src="assets/vendor/supabase-js-2.117.2.js"></script>
+<script src="assets/config.js"></script>
+<script src="assets/addresses.js"></script>
+<script src="assets/common.js"></script>
+<script src="assets/auth-ui.js"></script>
+<script>
+(function () {
+  const P = window.P11, { sb, esc, money, fmtDate, parseDate, cfg } = P;
+  const view = document.getElementById("view");
+  P.brand(); P.renderNav("account");
+  let recovering = false;
+
+  sb.auth.onAuthStateChange((evt) => {
+    if (evt === "PASSWORD_RECOVERY") { recovering = true; P.recoveryForm(view, () => { recovering = false; show(); }); }
+  });
+
+  function signedOut() {
+    P.authForm(view, { mode: location.hash === "#create" ? "signup" : "signin", onSignedIn: () => { P.renderNav("account"); show(); } });
+  }
+
+  function addressOptions() {
+    const groups = {};
+    window.PINERY_LOTS.forEach((l) => (groups[l.street] = groups[l.street] || []).push(l));
+    return Object.keys(groups).map((s) => `<optgroup label="${esc(s)}">${groups[s].map((l) => `<option value="${l.id}">${esc(l.address)}</option>`).join("")}</optgroup>`).join("");
+  }
+
+  async function show() {
+    if (recovering) return;
+    const user = await P.getUser();
+    if (!user) return signedOut();
+    const claim = await P.myClaim(user);
+    if (!claim) {
+      view.innerHTML = `<form class="authcard" id="claimForm"><h2>Choose your address</h2>
+        <p class="sub">Signed in as ${esc(user.email)}. Pick the home you own or rent in Pinery Filing 11. A board member will confirm it before you can see any dues.</p>
+        <label for="lot">Street address<select id="lot" required><option value="">Select your address</option>${addressOptions()}</select></label>
+        <div id="claimMsg" class="msg bad" hidden></div>
+        <button class="btn" type="submit">Request access</button></form>`;
+      document.getElementById("claimForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const lot = document.getElementById("lot").value, m = document.getElementById("claimMsg");
+        if (!lot) { m.hidden = false; m.textContent = "Select your address first."; return; }
+        const { error } = await sb.from("claims").insert({ user_id: user.id, lot_id: lot });
+        if (error) { m.hidden = false; m.textContent = P.friendly(error); return; }
+        show();
+      });
+      return;
+    }
+    const lot = P.lotById(claim.lot_id);
+    const addr = lot ? lot.address : claim.lot_id;
+    if (claim.status !== "approved") {
+      const pending = claim.status === "pending";
+      view.innerHTML = `<div class="authcard"><h2>${pending ? "Waiting for board approval" : "Request not approved"}</h2>
+        <p>${pending ? `You asked for access to <b>${esc(addr)}</b>. A board member will confirm that you live there. Check back soon.` : `The board could not match your request to <b>${esc(addr)}</b>. Email ${esc(cfg.contact.email)} for help, or choose a different address.`}</p>
+        <button class="btn ghost" type="button" id="cancelClaim">${pending ? "Cancel request and choose another address" : "Choose a different address"}</button></div>`;
+      document.getElementById("cancelClaim").addEventListener("click", async () => {
+        const { error } = await sb.from("claims").delete().eq("user_id", user.id);
+        if (error) return P.toast(P.friendly(error));
+        show();
+      });
+      return;
+    }
+    const st = await P.loadStatements(claim.lot_id);
+    if (st.error) { view.innerHTML = `<p class="msg bad">${esc(P.friendly(st.error))}</p>`; return; }
+    if (!st.rows.length) { view.innerHTML = `<div class="authcard"><h2>${esc(addr)}</h2><p>No dues have been set up yet.</p></div>`; return; }
+    view.innerHTML = `<div class="stack"><p class="sub">${esc(addr)} · signed in as ${esc(user.email)}</p>` + st.rows.map((r) => {
+      const pays = st.payments.filter((p) => p.year === r.year);
+      const adjs = st.adjustments.filter((a) => a.year === r.year);
+      return `<section class="card" style="max-width:720px"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center"><h2>${r.year} dues</h2><span class="pill ${r.status}">${P.statusLabel[r.status]}</span></div>
+        <dl class="num" style="display:grid;grid-template-columns:auto 1fr;gap:8px 18px;margin:0">
+          <dt style="color:var(--muted)">Billed</dt><dd style="margin:0;text-align:right">${money(r.billed)}</dd>
+          <dt style="color:var(--muted)">Paid</dt><dd style="margin:0;text-align:right">${money(r.paid)}</dd>
+          <dt><b>Balance</b></dt><dd style="margin:0;text-align:right"><b>${money(r.balance)}</b></dd>
+          <dt style="color:var(--muted)">Due date</dt><dd style="margin:0;text-align:right">${esc(fmtDate(r.due))}</dd>
+          ${r.lateFee > 0 ? `<dt style="color:var(--muted)">Late fee after</dt><dd style="margin:0;text-align:right">${esc(fmtDate(r.lateAfter))} (${money(r.lateFee)})</dd>` : ""}
+        </dl>
+        ${adjs.length ? `<p class="sub">Adjustments: ${adjs.map((a) => `${money(a.amount)}${a.note ? " (" + esc(a.note) + ")" : ""}`).join(", ")}</p>` : ""}
+        ${pays.length ? `<div class="table-wrap"><table class="mini"><thead><tr><th>Received</th><th>Method</th><th class="r">Amount</th></tr></thead><tbody>${pays.map((p) => `<tr><td>${esc(fmtDate(p.paid_on))}</td><td>${esc(p.method)}${p.reference ? " · " + esc(p.reference) : ""}</td><td class="r num">${money(p.amount)}</td></tr>`).join("")}</tbody></table></div>` : '<p class="sub">No payments received yet.</p>'}
+        ${r.balance > 0 ? `<p class="sub">To pay, make a check out to ${esc(cfg.pay.checkPayee)} with your address on the memo line. See How to pay on the home page.</p>` : ""}
+      </section>`;
+    }).join("") + "</div>";
+  }
+  show();
+})();
+</script>
+
+</body>
+</html>

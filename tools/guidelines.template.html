@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<title>Pinery 11 Architectural Guidelines</title>
+</head>
+<body>
+<div class="wrap" id="top">
+  <header class="bar">
+    <a class="brand" href="index.html">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 1 6 9h3l-4 6h4l-3 5h6v3h2v-3h6l-3-5h4l-4-6h3z"/></svg>
+      <span id="brandName">Pinery 11</span>
+    </a>
+    <nav class="nav" id="nav" aria-label="Main"></nav>
+  </header>
+
+  <main>
+    <div class="board-head" style="padding-block:12px 8px">
+      <div style="max-width:60ch">
+        <p class="eyebrow">The Pinery Filing No. 11 · July 10, 2016</p>
+        <h1 style="font-size:clamp(1.8rem,4.5vw,2.8rem);margin-top:10px">Architectural Guidelines and Rules and Regulations</h1>
+        <p class="lede" style="margin-top:12px;color:var(--muted)">The full text, with a plain-language FAQ that links back to the rule it comes from. If this page and the signed document ever differ, the document and the Declaration control.</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a class="btn" href="@PDF@" target="_blank" rel="noopener">View PDF</a>
+        <a class="btn ghost" href="@PDF@" download>Download</a>
+      </div>
+    </div>
+    <p class="notice" style="margin-block:12px 4px">The board and Design Review Committee may change these guidelines. Check with them that you have the latest edition before you start a project. This FAQ is a summary for convenience, not legal advice.</p>
+
+    <nav class="jump" aria-label="On this page">
+      <a href="#faq">Architectural Guidelines FAQ</a>
+      <a href="#contents">Contents</a>
+      <a href="#art-i">I. Introduction</a>
+      <a href="#art-ii">II. Specific improvements</a>
+      <a href="#art-iii">III. Committee approval</a>
+    </nav>
+
+    <section class="section" id="faq" aria-labelledby="faqTitle">
+      <h2 id="faqTitle">Architectural Guidelines FAQ</h2>
+      <p class="sub" style="max-width:70ch">Each answer lists the sections it draws on. Tap a section to jump to its text below, or open the matching page of the PDF.</p>
+      @FAQ@
+    </section>
+
+    <section class="section" id="contents" aria-labelledby="tocTitle">
+      <h2 id="tocTitle">Contents and search</h2>
+      <label for="gsearch" style="max-width:420px">Search the guidelines<input id="gsearch" type="search" placeholder="Try fence, parking, shed, paint" autocomplete="off"></label>
+      <p class="sub" id="gcount" role="status"></p>
+      <div class="toc" id="toc">@TOC@</div>
+    </section>
+
+    <section class="section" id="fulltext" aria-label="Full text">
+      <h2>Full text</h2>
+      <div id="gmain" class="gtext">
+@MAIN@
+      </div>
+    </section>
+  </main>
+</div>
+<script src="assets/vendor/supabase-js-2.117.2.js"></script>
+<script src="assets/config.js"></script>
+<script src="assets/addresses.js"></script>
+<script src="assets/common.js"></script>
+<script src="assets/auth-ui.js"></script>
+<script>
+(function () {
+  const P = window.P11;
+  P.brand(); P.renderNav("guidelines");
+  const secs = [...document.querySelectorAll(".gsec")], toc = [...document.querySelectorAll("#toc a")], count = document.getElementById("gcount");
+  const norm = (s) => s.toLowerCase();
+  document.getElementById("gsearch").addEventListener("input", (e) => {
+    const q = norm(e.target.value.trim());
+    let n = 0;
+    secs.forEach((s, i) => { const hit = !q || norm(s.textContent).includes(q); s.hidden = !hit; toc[i].hidden = !hit; if (hit) n++; });
+    count.textContent = q ? n + " of " + secs.length + " sections match “" + e.target.value.trim() + "”." : "";
+  });
+  // open the FAQ entry or scroll target named in the link
+  if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
+})();
+</script>
+</body>
+</html>
