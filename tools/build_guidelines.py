@@ -141,7 +141,7 @@ def setbacks_table(b):
 
 # ---- FAQ ----
 FAQ = [
- ("Getting approval", [
+ ("Approval and exceptions", [
   ("Do I need approval before I change something outside my home or lot?",
    "Usually, yes. The Declaration requires written approval from the Design Review Committee before improvements are started, and the guidelines say anything not listed in them also needs approval. Many everyday jobs are listed as not needing approval when you follow the rules for that item, for example repainting in the same colors or replacing landscaping plants.",
    ["1.1", "2.1", "3.1"]),
@@ -169,6 +169,12 @@ FAQ = [
   ("Who is on the Design Review Committee?",
    "Three members appointed by the Master Association's Board of Directors.",
    ["1.3"]),
+  ("I bought my home and something on the lot does not meet the guidelines. Do I have to remove it?",
+   "Not necessarily. If an earlier owner's improvement was approved in advance, or a previous owner's improvement is nonconforming, the current owner may not have to remove it or be fined, unless at the time of purchase you knew or should have known about it, for example because of a lien or pending suit.",
+   ["2.62"]),
+  ("What if the guidelines and the Declaration disagree?",
+   "The Declaration controls. If a question comes up about what a term or rule means, the Committee's interpretation is final. The board and Committee may also add to or change the guidelines, so confirm you have the latest edition before you start a project.",
+   ["1.5", "1.9"]),
  ]),
  ("Everyday rules", [
   ("Where can I park?",
@@ -230,17 +236,9 @@ FAQ = [
   ("Does anything affect drainage or utilities?",
    "Changes that significantly affect drainage need approval, and water must be able to flow freely across lots and away from foundations. You maintain the drainage swales and driveway culverts on your lot. All utility lines must be underground, and underground installations need approval.",
    ["2.30", "2.32", "2.107", "2.106"]),
- ]),
- ("Rules and exceptions", [
   ("What is never allowed?",
    "Among the things the guidelines prohibit outright: metal or vinyl siding, treehouses, wells, individual water supplies and sewage disposal systems, above-ground storage tanks, oil and gas drilling or mining, dirt or gravel driveways, wind-powered generators, livestock and exotic animals, chain link and similar boundary fences, reflective materials in windows, roof-mounted air conditioning, and discharging firearms except in self-defense.",
    ["2.35", "2.104", "2.114", "2.113", "2.83", "2.95", "2.31", "2.32", "2.8", "2.7", "2.36", "2.115", "2.6", "2.37"]),
-  ("I bought my home and something on the lot does not meet the guidelines. Do I have to remove it?",
-   "Not necessarily. If an earlier owner's improvement was approved in advance, or a previous owner's improvement is nonconforming, the current owner may not have to remove it or be fined, unless at the time of purchase you knew or should have known about it, for example because of a lien or pending suit.",
-   ["2.62"]),
-  ("What if the guidelines and the Declaration disagree?",
-   "The Declaration controls. If a question comes up about what a term or rule means, the Committee's interpretation is final. The board and Committee may also add to or change the guidelines, so confirm you have the latest edition before you start a project.",
-   ["1.5", "1.9"]),
  ]),
 ]
 
@@ -259,13 +257,15 @@ def ref_links(nums):
 
 def first_pdf(nums): return pdf_page(nums[0])
 
-faq_html = []
+faq_html = ['<div class="faqcols">']
 for cat, qs in FAQ:
-    faq_html.append(f'<h3 class="faqcat">{esc(cat)}</h3>')
+    faq_html.append(f'<div class="faqcol"><h3 class="faqcat">{esc(cat)}</h3>')
     for q, a, refs in qs:
         faq_html.append(f'<details class="faq"><summary>{esc(q)}</summary><div class="faqbody"><p>{esc(a)}</p>'
                         f'<p class="refs"><span class="sub">In the guidelines:</span> {ref_links(refs)} '
                         f'<a class="pdflink" href="{PDF}#page={first_pdf(refs)}" target="_blank" rel="noopener">Open PDF page {first_pdf(refs)}</a></p></div></details>')
+    faq_html.append('</div>')
+faq_html.append('</div>')
 
 toc = []
 for b in blocks:

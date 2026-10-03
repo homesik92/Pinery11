@@ -150,10 +150,14 @@ td.r, th.r { text-align: right; }
 .jump { display: flex; gap: 8px; flex-wrap: wrap; margin-block: 12px; }
 .jump a { font: 600 0.9rem var(--font-body); text-decoration: none; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--radius); color: var(--ink); background: var(--surface); }
 .jump a:hover { background: var(--pine-soft); }
-.faqcat { margin-top: 18px; font-size: 0.8rem; font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+.faqcols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; align-items: start; margin-top: 8px; }
+.faqcol { min-width: 0; }
+@media (max-width: 960px) { .faqcols { grid-template-columns: 1fr; gap: 0; } }
+.faqcat { margin-top: 18px; padding-bottom: 6px; border-bottom: 2px solid var(--pine); font-size: 0.8rem; font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
 details.faq { border-bottom: 1px solid var(--line); padding: 12px 0; }
 details.faq summary { font: 600 1.02rem var(--font-display); cursor: pointer; }
 .faqbody { display: grid; gap: 10px; margin-top: 8px; max-width: 70ch; }
+.faqcol details.faq summary { font-size: 0.98rem; }
 .faqbody p { color: var(--ink); font-size: 0.97rem; }
 .refs { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
 .ref, .pdflink { font: 600 0.8rem var(--font-body); text-decoration: none; padding: 4px 9px; border-radius: 99px; background: var(--pine-soft); color: var(--pine); }
