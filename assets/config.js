@@ -30,7 +30,8 @@ window.PINERY = {
     { date: "2026-10-02", title: "New Pinery 11 website in preview", body: "Dues information and governing documents are being moved here. Sign-in for private balances is coming next." }
   ],
   documents: [
-    { title: "Architectural Guidelines and Rules and Regulations", note: "The Pinery Filing No. 11, dated July 10, 2016. 31 pages.", file: "docs/Architectural-Guidelines-Rules-and-Regulations-2016.pdf", page: "guidelines.html" }
+    { title: "Architectural Guidelines and Rules and Regulations", note: "The Pinery Filing No. 11, dated July 10, 2016. 31 pages.", file: "docs/Architectural-Guidelines-Rules-and-Regulations-2016.pdf", page: "guidelines.html" },
+    { title: "Notice of the July 25, 2026 Annual Meeting", note: "Agenda and the General Proxy Authority form. Board members' contact details are removed. For the record.", file: "docs/General-Meeting-Notice-2026-07-25.pdf" }
   ],
   contact: { email: "[board email]", note: "The board answers within a few days." }
 };
